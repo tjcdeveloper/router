@@ -1,0 +1,21 @@
+{
+    "name": "tjcdev/router",
+    "description": "A simple router designed for use in APIs.",
+    "type": "library",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "TJCDev\\Router\\": "src/",
+            "TJCDev\\Router\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor\\bin\\phpunit --testdox"
+    }
+}
