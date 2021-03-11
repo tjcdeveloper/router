@@ -2,7 +2,8 @@
     "name": "tjcdev/router",
     "description": "A simple router designed for use in APIs.",
     "type": "library",
-    "version": "0.1.0",
+    "license": "MIT",
+    "version": "0.1.0-alpha",
     "require": {
         "php": "^8.0"
     },
