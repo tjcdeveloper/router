@@ -56,22 +56,22 @@ class Route implements RouteContract
      * @inheritDoc
      */
     #[Pure]
-    public function checkForMatch(array $parts, string $method): bool
+    public function checkForMatch(array $segments, string $method): bool
     {
         if ( ! in_array($method, $this->methods)) {
             return false;
         }
         
-        if (($a = count($parts)) != ($b = count($this->segments))) {
+        if (($a = count($segments)) != ($b = count($this->segments))) {
             return false;
         }
         
-        foreach ($this->segments as $i => $part) {
-            if ($part['regex']) {
-                if ( ! preg_match($part['pattern'], $parts[$i])) {
+        foreach ($this->segments as $i => $segment) {
+            if ($segment['regex']) {
+                if ( ! preg_match($segment['pattern'], $segments[$i])) {
                     return false;
                 }
-            } elseif ($part['pattern'] != $parts[$i]) {
+            } elseif ($segment['pattern'] != $segments[$i]) {
                 return false;
             }
         }
@@ -106,9 +106,9 @@ class Route implements RouteContract
      */
     protected function breakDownPattern(): void
     {
-        $parts = explode('/', trim($this->pattern, '/'));
-        foreach ($parts as $part) {
-            if (preg_match('/^{(?<key>\w+)}(?:<(?<pattern>[\w\\\^\(\)+=<>?,.;:!£$%&*]+)>)?$/', $part, $matches)) {
+        $segments = explode('/', trim($this->pattern, '/'));
+        foreach ($segments as $segment) {
+            if (preg_match('/^{(?<key>\w+)}(?:<(?<pattern>[\w\\\^\(\)+=<>?,.;:!£$%&*]+)>)?$/', $segment, $matches)) {
                 if ( ! array_key_exists('pattern', $matches)) {
                     $matches['pattern'] = '.+';
                 }
@@ -120,7 +120,7 @@ class Route implements RouteContract
             } else {
                 $this->segments[] = [
                     'key'     => '',
-                    'pattern' => $part,
+                    'pattern' => $segment,
                     'regex'   => false
                 ];
             }

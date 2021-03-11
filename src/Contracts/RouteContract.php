@@ -23,11 +23,11 @@ interface RouteContract
     /**
      * Check to see if the passed in exploded route matches this route.
      *
-     * @param  array   $parts  A route separated into individual segments
-     *                         E.g. explode('/', trim('/my/route', '/'));
+     * @param  array   $segments  A route separated into individual segments
+     *                            E.g. explode('/', trim('/my/route', '/'));
      * @param  string  $method
      *
      * @return bool
      */
-    public function checkForMatch(array $parts, string $method): bool;
+    public function checkForMatch(array $segments, string $method): bool;
 }
