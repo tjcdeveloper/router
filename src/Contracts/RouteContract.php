@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace TJCDev\Router\Contracts;
 
 use Closure;
+use Psr\Http\Message\RequestInterface;
 use TJCDev\Router\Exceptions\InvalidHTTPMethodException;
 
 interface RouteContract
@@ -19,15 +20,15 @@ interface RouteContract
      * @throws InvalidHTTPMethodException
      */
     public function __construct(string $pattern, array|string $methods, Closure|string $callable);
-    
+
     /**
      * Check to see if the passed in exploded route matches this route.
      *
-     * @param  array   $segments  A route separated into individual segments
-     *                            E.g. explode('/', trim('/my/route', '/'));
-     * @param  string  $method
+     * @param RequestInterface  $request
      *
-     * @return bool
+     * @return array|bool Returns false or an array of arguments to be passed to the controller
      */
-    public function checkForMatch(array $segments, string $method): bool;
+    public function checkForMatch(RequestInterface $request): array|bool;
+
+    public function dispatch(): mixed;
 }

@@ -5,12 +5,14 @@ namespace TJCDev\Router\Tests;
 
 use JetBrains\PhpStorm\Pure;
 use PHPUnit\Framework\TestCase;
+use TJCDev\Router\Exceptions\RouteNotFoundException;
 use TJCDev\Router\Route;
 use TJCDev\Router\Router;
 
 class RouterTests extends TestCase
 {
     protected Router $router;
+    protected string $testRouteResponse = 'Test route';
     
     public function __construct(?string $name = null, array $data = [], $dataName = '')
     {
@@ -26,7 +28,7 @@ class RouterTests extends TestCase
     
     public function testMakeGetRoute(): void
     {
-        $this->router->make('/test-route', 'GET', fn() => 'Test route');
+        $this->router->make('/test-route', 'GET', fn() => $this->testRouteResponse);
         $route = $this->getLastMadeRoute();
         $this->assertEquals('/test-route', $route->getPattern());
         $this->assertEquals(['GET'], $route->getMethods());
@@ -62,5 +64,24 @@ class RouterTests extends TestCase
         $route = $this->getLastMadeRoute();
         $this->assertEquals('/test-route/{id}<\d+>', $route->getPattern());
         $this->assertEquals(['DELETE'], $route->getMethods());
+    }
+    
+    /**
+     * @depends testMakeGetRoute
+     */
+    public function testDispatchValidRoute(): void
+    {
+        $this->assertEquals($this->testRouteResponse, $this->router->dispatch('/test-route'));
+    }
+    
+    public function testDispatchClassRoute(): void
+    {
+    
+    }
+    
+    public function testRouteNotFound(): void
+    {
+        $this->expectException(RouteNotFoundException::class);
+        $this->router->dispatch('/invalid-route');
     }
 }
