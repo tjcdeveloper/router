@@ -3,13 +3,19 @@ declare(strict_types = 1);
 
 namespace TJCDev\Router;
 
+use JetBrains\PhpStorm\Pure;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use TJCDev\Router\Exceptions\RouteCallbackException;
+use TJCDev\Router\Exceptions\RouteNotFoundException;
+
 class Router
 {
     /**
      * @var Route[]
      */
     protected array $routes = [];
-    
+
     /**
      * @return Route[]
      */
@@ -17,7 +23,7 @@ class Router
     {
         return $this->routes;
     }
-    
+
     /**
      * @param  string           $pattern
      * @param  array|string     $methods
@@ -31,7 +37,7 @@ class Router
         $this->routes[] = new Route($pattern, $methods, $callback);
         return $this;
     }
-    
+
     /**
      * @param  string           $pattern
      * @param  string|callable  $callback
@@ -43,7 +49,7 @@ class Router
     {
         return $this->make($pattern, ['DELETE'], $callback);
     }
-    
+
     /**
      * @param  string           $pattern
      * @param  string|callable  $callback
@@ -55,7 +61,7 @@ class Router
     {
         return $this->make($pattern, ['GET'], $callback);
     }
-    
+
     /**
      * @param  string           $pattern
      * @param  string|callable  $callback
@@ -67,7 +73,7 @@ class Router
     {
         return $this->make($pattern, ['POST'], $callback);
     }
-    
+
     /**
      * @param  string           $pattern
      * @param  string|callable  $callback
@@ -78,5 +84,37 @@ class Router
     public function makePut(string $pattern, Callable|string $callback): Router
     {
         return $this->make($pattern, ['PUT'], $callback);
+    }
+
+    /**
+     * @param RequestInterface  $request
+     *
+     * @return mixed
+     * @throws RouteNotFoundException|RouteCallbackException
+     */
+    public function dispatch(RequestInterface $request): mixed
+    {
+        if ( ! ($route = $this->matchRoute($request))) {
+            throw new RouteNotFoundException();
+        }
+
+        return $route->dispatch();
+    }
+
+    /**
+     * @param RequestInterface  $request
+     *
+     * @return Route|null
+     */
+    #[Pure]
+    protected function matchRoute(RequestInterface $request): ?Route
+    {
+        foreach ($this->routes as $route) {
+            if ($route->checkForMatch($request) !== false) {
+                return $route;
+            }
+        }
+
+        return null;
     }
 }
