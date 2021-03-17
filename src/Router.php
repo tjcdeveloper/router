@@ -6,6 +6,7 @@ namespace TJCDev\Router;
 use JetBrains\PhpStorm\Pure;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use TJCDev\Router\Exceptions\RouteCallbackException;
 use TJCDev\Router\Exceptions\RouteNotFoundException;
 
 class Router
@@ -88,10 +89,10 @@ class Router
     /**
      * @param RequestInterface  $request
      *
-     * @return ResponseInterface
-     * @throws RouteNotFoundException
+     * @return mixed
+     * @throws RouteNotFoundException|RouteCallbackException
      */
-    public function dispatch(RequestInterface $request): ResponseInterface
+    public function dispatch(RequestInterface $request): mixed
     {
         if ( ! ($route = $this->matchRoute($request))) {
             throw new RouteNotFoundException();
@@ -109,7 +110,7 @@ class Router
     protected function matchRoute(RequestInterface $request): ?Route
     {
         foreach ($this->routes as $route) {
-            if ($route->checkForMatch($request)) {
+            if ($route->checkForMatch($request) !== false) {
                 return $route;
             }
         }

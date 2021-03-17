@@ -70,11 +70,9 @@ class RouterTests extends TestCase
         $this->assertEquals(['DELETE'], $route->getMethods());
     }
 
-    /**
-     * @depends testMakeGetRoute
-     */
     public function testDispatchValidRoute(): void
     {
+        $this->router->make('/test-route', 'GET', fn() => $this->testRouteResponse);
         $this->assertEquals($this->testRouteResponse, $this->router->dispatch($this->makeRequestStub('/test-route',
             'GET')));
     }
