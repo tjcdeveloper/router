@@ -3,18 +3,17 @@ declare(strict_types=1);
 
 namespace TJCDev\Router\Tests;
 
-use http\Env\Response;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
-use ReflectionClass;
-use stdClass;
 use TJCDev\Router\Exceptions\InvalidHTTPMethodException;
 use TJCDev\Router\Route;
 
 class RouteTests extends TestCase
 {
+    use MakeRequestTrait;
+
     protected Route $specificUserRoute;
     protected Route $userRoute;
 
@@ -29,106 +28,49 @@ class RouteTests extends TestCase
      */
     public function __construct(?string $name = null, array $data = [], $dataName = '')
     {
-        $responseStub = $this->createStub(ResponseInterface::class);
-        $responseStub->method('getBody')
-            ->willReturn('Response body');
-        $this->userRoute = new Route("/users", ["get", "PoST"], fn() => $responseStub);
-        $this->specificUserRoute = new Route("/users/{id}<\d+>", ["GET", "PUT", "DELETE"], fn() => $responseStub);
+        $this->userRoute = new Route("/users", ["get", "PoST"], fn() => 'Users');
+        $this->specificUserRoute = new Route("/users/{id}<\d+>", ["GET", "PUT", "DELETE"], fn() => 'Specific user');
         parent::__construct($name, $data, $dataName);
     }
 
     public function testCheckMatchValidPostRoute(): void
     {
         $expected = [];
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('POST');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertEquals($expected, $this->userRoute->checkForMatch($requestStub), "checkForMatch should successfully match a valid route using the POST method.");
+        $this->assertEquals($expected, $this->userRoute->checkForMatch($this->makeRequestStub('/users', 'POST')), "checkForMatch should successfully match a valid route using the POST method.");
     }
 
     public function testCheckMatchValidGetRoute(): void
     {
         $expected = [];
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('GET');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertEquals($expected, $this->userRoute->checkForMatch($requestStub), "checkForMatch should successfully match a valid route using the GET method.");
+        $this->assertEquals($expected, $this->userRoute->checkForMatch($this->makeRequestStub('/users', 'GET')), "checkForMatch should successfully match a valid route using the GET method.");
     }
 
     public function testCheckMatchValidRouteWithVariable(): void
     {
         $expected = ['id' => 123];
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users/123');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('GET');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertEquals($expected, $this->specificUserRoute->checkForMatch($requestStub), "checkForMatch should successfully match a valid route using the GET method and identify the ID in the path.");
+        $this->assertEquals($expected, $this->specificUserRoute->checkForMatch($this->makeRequestStub('/users/123', 'GET')),
+            "checkForMatch should successfully match a valid route using the GET method and identify the ID in the path.");
     }
 
     public function testCheckMatchInvalidPath(): void
     {
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users/invalid/path');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('GET');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertFalse($this->userRoute->checkForMatch($requestStub), "checkForMatch should reject an invalid path.");
+        $this->assertFalse($this->userRoute->checkForMatch($this->makeRequestStub('/users/invalid/path', 'GET')), "checkForMatch should reject an invalid path.");
     }
 
     public function testCheckMatchInvalidMethod(): void
     {
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('DELETE');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertFalse($this->userRoute->checkForMatch($requestStub), "checkForMatch should reject a valid route using an invalid method");
+        $this->assertFalse($this->userRoute->checkForMatch($this->makeRequestStub('/users', 'DELETE')), "checkForMatch should reject a valid route using an invalid method");
     }
 
     public function testCheckMatchMissingVariable(): void
     {
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('GET');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertFalse($this->specificUserRoute->checkForMatch($requestStub), "checkForMatch should reject a route missing a required variable");
+        $this->assertFalse($this->specificUserRoute->checkForMatch($this->makeRequestStub('/users', 'GET')), "checkForMatch should reject a route missing a required variable");
     }
 
     public function testCheckMatchInvalidVariable(): void
     {
-        $uriStub = $this->createStub(UriInterface::class);
-        $uriStub->method('getPath')
-            ->willReturn('/users/a-string');
-        $requestStub = $this->createStub(RequestInterface::class);
-        $requestStub->method('getMethod')
-            ->willReturn('GET');
-        $requestStub->method('getUri')
-            ->willReturn($uriStub);
-        $this->assertFalse($this->specificUserRoute->checkForMatch($requestStub), "checkForMatch should reject a route with a variable that does not match the specified pattern");
+        $this->assertFalse($this->specificUserRoute->checkForMatch($this->makeRequestStub('/users/a-string', 'GET')),
+            "checkForMatch should reject a route with a variable that does not match the specified pattern");
     }
 
     public function testBreakPatternDown(): void
@@ -150,13 +92,13 @@ class RouteTests extends TestCase
                 "regex" => false,
             ],
         ];
-        $route = new Route("/part-one/{id}<\d+>/part-three", "GET", fn() => $this->createStub(ResponseInterface::class));
+        $route = new Route("/part-one/{id}<\d+>/part-three", "GET", fn() => '3 part response');
         $this->assertEquals($expected, $route->getSegments(), "A Route should break down the pattern into individual segments, highlighting variables for regex matching");
     }
 
     public function testRouteDispatchWithCallback(): void
     {
-        $this->assertEquals("Response body", $this->userRoute->dispatch()->getBody(), "Route::dispatch should execute the callback and return the result");
+        $this->assertEquals("Users", $this->userRoute->dispatch(), "Route::dispatch should execute the callback and return the result");
     }
 
     public function testRouteDispatchWithClass(): void
