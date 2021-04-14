@@ -4,10 +4,9 @@ declare(strict_types = 1);
 namespace TJCDev\Router\Contracts;
 
 use Closure;
-use Psr\Http\Message\RequestInterface;
 use TJCDev\Router\Exceptions\InvalidHTTPMethodException;
 
-interface RouteContract
+interface RouteInterface
 {
     /**
      * RouteContract constructor.
@@ -22,6 +21,15 @@ interface RouteContract
     public function __construct(string $pattern, array|string $methods, Closure|string $callable);
 
     /**
+     * Add middleware to be run when this route is dispatched.
+     *
+     * @param string|array  $middleware
+     *
+     * @return RouteInterface
+     */
+    public function addMiddleware(string|array $middleware): RouteInterface;
+
+    /**
      * Check to see if the passed in exploded route matches this route.
      *
      * @param RequestInterface  $request
@@ -30,5 +38,17 @@ interface RouteContract
      */
     public function checkForMatch(RequestInterface $request): array|bool;
 
-    public function dispatch(): mixed;
+    /**
+     * Return the closure or instantiated class and method named in the $callable argument during construction.
+     *
+     * @return Callable
+     */
+    public function getCallable(): Callable;
+
+    /**
+     * Return the list of middleware that has been added to this route.
+     *
+     * @return string[]
+     */
+    public function getMiddleware(): array;
 }

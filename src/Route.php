@@ -6,15 +6,14 @@ namespace TJCDev\Router;
 use Closure;
 use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\Pure;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 use ReflectionClass;
 use ReflectionException;
-use TJCDev\Router\Contracts\RouteContract;
+use TJCDev\Router\Contracts\RequestInterface;
+use TJCDev\Router\Contracts\RouteInterface;
 use TJCDev\Router\Exceptions\InvalidHTTPMethodException;
 use TJCDev\Router\Exceptions\RouteCallbackException;
 
-class Route implements RouteContract
+class Route implements RouteInterface
 {
     const ALLOWED_METHODS = [
         'DELETE',
@@ -32,6 +31,7 @@ class Route implements RouteContract
 
     protected Closure|string $callback;
     protected array $methods = [];
+    protected array $middleware = [];
     protected string $pattern = '';
 
     #[ArrayShape([self::SEGMENT_SHAPE])]
@@ -58,6 +58,15 @@ class Route implements RouteContract
         $this->breakDownPattern();
     }
 
+    public function addMiddleware(array|string $middleware): RouteInterface
+    {
+        if ( ! is_array($middleware))
+            $middleware = [$middleware];
+
+        $this->middleware = array_merge($this->middleware, $middleware);
+        return $this;
+    }
+
     /**
      * @inheritDoc
      */
@@ -69,7 +78,7 @@ class Route implements RouteContract
             return false;
         }
 
-        $segments = explode('/', trim($request->getUri()->getPath(), '/'));
+        $segments = explode('/', trim($request->getPath(), '/'));
         if (($a = count($segments)) != ($b = count($this->segments))) {
             return false;
         }
@@ -151,7 +160,7 @@ class Route implements RouteContract
      * @return callable
      * @throws RouteCallbackException
      */
-    protected function getCallable(): callable
+    public function getCallable(): callable
     {
         if (is_callable($this->callback)) {
             return $this->callback;
@@ -170,8 +179,7 @@ class Route implements RouteContract
                         ));
                 }
 
-                if (! method_exists($class, $method))
-                {
+                if (! method_exists($class, $method)) {
                     throw new RouteCallbackException(
                         sprintf(
                             'The method "%s::%s" in route "%s" could not be found.',
@@ -190,6 +198,14 @@ class Route implements RouteContract
         }
 
         throw new RouteCallbackException(sprintf('The callback for route "%s" could not be identified.', $this->pattern));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getMiddleware(): array
+    {
+        return $this->middleware;
     }
 
     private function instantiateClass(string $class)
