@@ -4,15 +4,12 @@ declare(strict_types=1);
 namespace TJCDev\Router\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
 use TJCDev\Router\Exceptions\InvalidHTTPMethodException;
 use TJCDev\Router\Route;
 
 class RouteTests extends TestCase
 {
-    use MakeRequestTrait;
+    use MockRouteTrait;
 
     protected Route $specificUserRoute;
     protected Route $userRoute;
@@ -36,40 +33,40 @@ class RouteTests extends TestCase
     public function testCheckMatchValidPostRoute(): void
     {
         $expected = [];
-        $this->assertEquals($expected, $this->userRoute->checkForMatch($this->makeRequestStub('/users', 'POST')), "checkForMatch should successfully match a valid route using the POST method.");
+        $this->assertEquals($expected, $this->userRoute->checkForMatch($this->createMockRequest('/users', 'POST')), "checkForMatch should successfully match a valid route using the POST method.");
     }
 
     public function testCheckMatchValidGetRoute(): void
     {
         $expected = [];
-        $this->assertEquals($expected, $this->userRoute->checkForMatch($this->makeRequestStub('/users', 'GET')), "checkForMatch should successfully match a valid route using the GET method.");
+        $this->assertEquals($expected, $this->userRoute->checkForMatch($this->createMockRequest('/users', 'GET')), "checkForMatch should successfully match a valid route using the GET method.");
     }
 
     public function testCheckMatchValidRouteWithVariable(): void
     {
         $expected = ['id' => 123];
-        $this->assertEquals($expected, $this->specificUserRoute->checkForMatch($this->makeRequestStub('/users/123', 'GET')),
+        $this->assertEquals($expected, $this->specificUserRoute->checkForMatch($this->createMockRequest('/users/123', 'GET')),
             "checkForMatch should successfully match a valid route using the GET method and identify the ID in the path.");
     }
 
     public function testCheckMatchInvalidPath(): void
     {
-        $this->assertFalse($this->userRoute->checkForMatch($this->makeRequestStub('/users/invalid/path', 'GET')), "checkForMatch should reject an invalid path.");
+        $this->assertFalse($this->userRoute->checkForMatch($this->createMockRequest('/users/invalid/path', 'GET')), "checkForMatch should reject an invalid path.");
     }
 
     public function testCheckMatchInvalidMethod(): void
     {
-        $this->assertFalse($this->userRoute->checkForMatch($this->makeRequestStub('/users', 'DELETE')), "checkForMatch should reject a valid route using an invalid method");
+        $this->assertFalse($this->userRoute->checkForMatch($this->createMockRequest('/users', 'DELETE')), "checkForMatch should reject a valid route using an invalid method");
     }
 
     public function testCheckMatchMissingVariable(): void
     {
-        $this->assertFalse($this->specificUserRoute->checkForMatch($this->makeRequestStub('/users', 'GET')), "checkForMatch should reject a route missing a required variable");
+        $this->assertFalse($this->specificUserRoute->checkForMatch($this->createMockRequest('/users', 'GET')), "checkForMatch should reject a route missing a required variable");
     }
 
     public function testCheckMatchInvalidVariable(): void
     {
-        $this->assertFalse($this->specificUserRoute->checkForMatch($this->makeRequestStub('/users/a-string', 'GET')),
+        $this->assertFalse($this->specificUserRoute->checkForMatch($this->createMockRequest('/users/a-string', 'GET')),
             "checkForMatch should reject a route with a variable that does not match the specified pattern");
     }
 
