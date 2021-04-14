@@ -3,7 +3,7 @@
     "description": "A simple router designed for use in APIs.",
     "type": "library",
     "license": "MIT",
-    "version": "0.1.1-alpha",
+    "version": "0.2.0-alpha",
     "require": {
         "php": "^8.0",
         "ext-mbstring": "*"
