@@ -10,6 +10,7 @@ use TJCDev\Router\Contracts\RequestInterface;
 use TJCDev\Router\Contracts\ResponseInterface;
 use TJCDev\Router\Contracts\RouteInterface;
 use TJCDev\Router\Contracts\RouterInterface;
+use TJCDev\Router\Exceptions\RouteNotFoundException;
 
 class RequestHandler implements RequestHandlerInterface
 {
@@ -27,11 +28,13 @@ class RequestHandler implements RequestHandlerInterface
             $this->request = $request;
             $route = $this->router->matchRoute($request);
             if (is_null($route))
-                return $this->generate404();
+                throw new RouteNotFoundException(sprintf('No matching route found for "%s"', $request->getPath()));
 
             $this->stack = $this->instantiateMiddleware($route);
             $this->stack[] = $route->getCallable();
             return $this->callNext();
+        } catch (RouteNotFoundException $e) {
+            return $this->generate404($e);
         } catch (Exception $e) {
             return $this->generateError($e);
         }
@@ -58,14 +61,20 @@ class RequestHandler implements RequestHandlerInterface
         return $instantiated;
     }
 
-    protected function generate404(): ResponseInterface
+    protected function generate404(RouteNotFoundException $e): ResponseInterface
     {
+        $response = new Response();
+        $response->setCode(404)
+                 ->setBody(['data' => ['status' => 'ERROR', 'code' => '404', 'message' => 'Page Not Found']]);
 
+        return $response;
     }
 
     protected function generateError(Exception $e): ResponseInterface
     {
-
+        $response = new Response();
+        $response->setCode(in_array($e->getCode(), Response::VALID_RESPONSE_CODES) ? $e->getCode() : 500)
+                 ->setBody(['data' => ['status' => 'ERROR', 'code' => $e->getCode(), 'message' => $e->getMessage()]]);
     }
 
     /**

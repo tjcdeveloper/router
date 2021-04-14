@@ -34,7 +34,7 @@ class RequestHandlerTests extends TestCase
     public function testRouteNotFound(): void
     {
         $handler = new RequestHandler();
-        $response = $handler->registerRouter($this->createMockRouter())
+        $response = $handler->registerRouter($this->createMockRouter(false))
                             ->handle($this->createMockRequest('/fake/path', 'POST'));
         $this->assertInstanceOf(ResponseInterface::class, $response, "RequestHandler::handle() should return an instance of ResponseInterface, even for routes that produce errors.");
         $reflection = new ReflectionClass($response);
@@ -43,7 +43,7 @@ class RequestHandlerTests extends TestCase
         $this->assertEquals(404, $code->getValue($response), "Response::code should be 404 for a route that does not exist.");
     }
 
-    protected function createMockRouter(): RouterInterface
+    protected function createMockRouter(bool $success = true): RouterInterface
     {
         $route = $this->createMockRoute();
         $router = $this->getMockBuilder(RouterInterface::class)
@@ -51,7 +51,7 @@ class RequestHandlerTests extends TestCase
                        ->getMock();
         $router->method('getRoutes')->willReturn([$route]);
         $router->method('make')->willReturnSelf();
-        $router->method('matchRoute')->willReturn($route);
+        $router->method('matchRoute')->willReturn($success ? $route : null);
         $router->method('middleware')->willReturnSelf();
         $router->method('registerMiddleware')->willReturnSelf();
         return $router;
