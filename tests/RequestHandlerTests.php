@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace TJCDev\Router\Tests;
 
+use Exception;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use TJCDev\Router\Contracts\ResponseInterface;
@@ -19,7 +21,7 @@ class RequestHandlerTests extends TestCase
     public function testGetResponse(): void
     {
         $handler = new RequestHandler();
-        $response = $handler->registerRouter($this->createMockRouter())
+        $response = $handler->registerRouter($this->createMockRouter(true, $this->createMockRoute()))
                             ->handle($this->createMockRequest('/my/path', 'GET'));
         $this->assertInstanceOf(ResponseInterface::class, $response, "RequestHandler::handle() should return an instance of ResponseInterface.");
         $reflection = new ReflectionClass($response);
@@ -43,9 +45,39 @@ class RequestHandlerTests extends TestCase
         $this->assertEquals(404, $code->getValue($response), "Response::code should be 404 for a route that does not exist.");
     }
 
-    protected function createMockRouter(bool $success = true): RouterInterface
+    public function testErrorResponse(): void
     {
-        $route = $this->createMockRoute();
+        $message = "Test exception";
+        $handler = new RequestHandler();
+        $route = $this->getMockBuilder(Route::class)
+                      ->onlyMethods(['checkForMatch', 'getCallable', 'getMiddleware'])
+                      ->disableOriginalConstructor()
+                      ->getMock();
+        $route->method('checkForMatch')->willReturn(true);
+        $route->method('getCallable')->willThrowException(new Exception($message, 501));
+        $route->method('getMiddleware')->willReturn([]);
+        $router = $this->createMockRouter(true, $route);
+
+        $response = $handler->registerRouter($router)
+                            ->handle($this->createMockRequest('/some/path', 'POST'));
+        $reflection = new ReflectionClass($response);
+
+        $code = $reflection->getProperty('code');
+        $code->setAccessible(true);
+        $this->assertEquals(501, $code->getValue($response), "RequestHandler::handle() should return an object with a 501 response code when an exception is thrown with a code of 501.");
+
+        $body = $reflection->getProperty('body');
+        $body->setAccessible(true);
+        $actualBody = $body->getValue($response);
+        $this->assertArrayHasKey('data', $actualBody, "The body should contain an array with a single key, data");
+        $this->assertEquals('ERROR', $actualBody['data']['status'], "The data array should contain a status with a value of ERROR.");
+        $this->assertEquals(501, $actualBody['data']['code'], "The data array should contain a code with a value of 501");
+        $this->assertEquals($message, $actualBody['data']['message'], "The data array should contain a message with a value of the exception message.");
+    }
+
+    protected function createMockRouter(bool $success = true, Route|MockObject $route = null):
+    RouterInterface|MockObject
+    {
         $router = $this->getMockBuilder(RouterInterface::class)
                        ->onlyMethods(['getRoutes', 'make', 'matchRoute', 'middleware', 'registerMiddleware', 'getMiddleware'])
                        ->getMock();
@@ -57,7 +89,7 @@ class RequestHandlerTests extends TestCase
         return $router;
     }
 
-    protected function createMockRoute(): Route
+    protected function createMockRoute(): Route|MockObject
     {
         $route = $this->getMockBuilder(Route::class)
                       ->onlyMethods(['checkForMatch', 'getCallable', 'getMiddleware'])
