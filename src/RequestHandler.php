@@ -75,6 +75,8 @@ class RequestHandler implements RequestHandlerInterface
         $response = new Response();
         $response->setCode(in_array($e->getCode(), Response::VALID_RESPONSE_CODES) ? $e->getCode() : 500)
                  ->setBody(['data' => ['status' => 'ERROR', 'code' => $e->getCode(), 'message' => $e->getMessage()]]);
+
+        return $response;
     }
 
     /**
